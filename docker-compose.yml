@@ -1,0 +1,68 @@
+version: '3'
+
+networks:
+  ceph:
+    external:
+      name: ceph-net
+
+services:
+  mon:
+    image: ceph/daemon:latest-mimic
+    command: mon
+    network_mode: host
+    environment:
+      MON_IP: ${MON_IP}
+      CEPH_PUBLIC_NETWORK: ${CEPH_PUBLIC_NETWORK}
+    volumes:
+      - ${PATH_CEPH}/ceph/ceph:/etc/ceph
+      - ${PATH_CEPH}/ceph/lib:/var/lib/ceph/
+
+  mgr:
+    image: ceph/daemon:latest-mimic
+    command: mgr
+    volumes:
+    - ${PATH_CEPH}/ceph/lib/:/var/lib/ceph/
+    - ${PATH_CEPH}/ceph/ceph:/etc/ceph
+    networks:
+      - ceph
+    depends_on:
+      - mon
+    ports:
+      - "8443:8443"
+
+  osd1:
+    image: ceph/daemon:latest-mimic
+    command: osd
+    privileged: true
+    pid: host
+    volumes:
+      - ${PATH_CEPH}/ceph/ceph:/etc/ceph
+      - ${PATH_CEPH}/ceph/lib/:/var/lib/ceph/
+      - ${PATH_CEPH}/ceph/osd:/var/lib/ceph/osd
+    networks:
+      - ceph
+
+  mds:
+    image: ceph/daemon:latest-mimic
+    command: mds
+    hostname: "ceph-host"
+    environment:
+      CEPHFS_CREATE: 1
+    volumes:
+      - ${PATH_CEPH}/ceph/ceph:/etc/ceph
+      - ${PATH_CEPH}/ceph/lib:/var/lib/ceph/
+    networks:
+      - ceph
+
+
+  rgw1:
+    image: ceph/daemon:latest-mimic
+    command: rgw
+    volumes:
+      - ${PATH_CEPH}/ceph/ceph:/etc/ceph
+      - ${PATH_CEPH}/ceph/lib:/var/lib/ceph/
+    networks:
+      - ceph
+    ports:
+      - "8080:8080"
+
